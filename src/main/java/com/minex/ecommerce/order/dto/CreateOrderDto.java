@@ -8,13 +8,13 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CreateOrderRequest {
+public class CreateOrderDto {
 
   @NotNull
   private User user; 
 
   @NotNull
-  private List<CreateOrderItem> checkoutItems;
+  private List<CreateOrderItemDto> checkoutItems;
 
   @NotNull
   private String deliveryAddress;

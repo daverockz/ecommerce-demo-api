@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
-import com.minex.ecommerce.order.dto.CreateOrderItem;
-import com.minex.ecommerce.order.dto.CreateOrderRequest;
+import com.minex.ecommerce.order.dto.CreateOrderItemDto;
+import com.minex.ecommerce.order.dto.CreateOrderDto;
 import com.minex.ecommerce.order.model.Order;
 import com.minex.ecommerce.order.model.OrderItem;
 import com.minex.ecommerce.order.model.OrderStatus;
@@ -61,10 +61,10 @@ public class OrderService {
     }
 
     @Transactional
-    public Order createOrder(CreateOrderRequest checkoutRequest) {
-        User user = userService.getOrCreateUser(checkoutRequest.getUser());
-        Order order = createOrder(checkoutRequest, user);
-        List<OrderItem> orderItems = createOrderItems(checkoutRequest, order);
+    public Order createOrder(CreateOrderDto createOrder) {
+        User user = userService.getOrCreateUser(createOrder.getUser());
+        Order order = createOrder(createOrder, user);
+        List<OrderItem> orderItems = createOrderItems(createOrder, order);
 
         order.setOrderItems(orderItems);
         order.setTotalAmountDue(calculateTotalAmountDue(orderItems));
@@ -73,27 +73,26 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    private Order createOrder(CreateOrderRequest checkoutRequest, User user) {
+    private Order createOrder(CreateOrderDto createOrderDto, User user) {
         return Order.builder()
                 .userId(user)
-                .deliveryAddress(checkoutRequest.getDeliveryAddress())
+                .deliveryAddress(createOrderDto.getDeliveryAddress())
                 .createdAt(LocalDateTime.now())
                 .lastModified(LocalDateTime.now())
-                // You can chain other setters here if you have more fields to set
                 .build();
     }
     
 
-    private List<OrderItem> createOrderItems(CreateOrderRequest checkoutRequest, Order order) {
+    private List<OrderItem> createOrderItems(CreateOrderDto createOrderDto, Order order) {
         // Correctly collect IDs into a Set instead of casting a List to a Set
-        Set<Long> productIds = checkoutRequest.getCheckoutItems().stream()
-                .map(CreateOrderItem::getProductId)
+        Set<Long> productIds = createOrderDto.getCheckoutItems().stream()
+                .map(CreateOrderItemDto::getProductId)
                 .collect(Collectors.toSet());
     
         Map<Long, Product> productMap = productService.getProductsByIds(productIds);
     
         List<OrderItem> orderItems = new ArrayList<>();
-        for (CreateOrderItem checkoutItem : checkoutRequest.getCheckoutItems()) {
+        for (CreateOrderItemDto checkoutItem : createOrderDto.getCheckoutItems()) {
             Product product = productMap.get(checkoutItem.getProductId());
             if (product != null) {
                 orderItems.add(createOrderItem(checkoutItem, order, product));
@@ -104,15 +103,15 @@ public class OrderService {
         return orderItemRepository.saveAll(orderItems);
     }    
 
-    private OrderItem createOrderItem(CreateOrderItem checkoutItem, Order order, Product product) {
+    private OrderItem createOrderItem(CreateOrderItemDto createOrderItemDto, Order order, Product product) {
         return OrderItem.builder()
                 .order(order)
                 .price(product.getPrice())
-                .quantity(checkoutItem.getQuantity())
+                .quantity(createOrderItemDto.getQuantity())
                 .name(product.getName())
                 .description(product.getDescription())
                 .imageUrl(product.getImageUrl())
-                .subTotal(product.getPrice() * checkoutItem.getQuantity())
+                .subTotal(product.getPrice() * createOrderItemDto.getQuantity())
                 .createdAt(LocalDateTime.now())
                 .lastModified(LocalDateTime.now())
                 .build();

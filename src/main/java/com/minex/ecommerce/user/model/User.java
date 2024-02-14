@@ -3,6 +3,7 @@ package com.minex.ecommerce.user.model;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,11 +18,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Entity
 @Table(name = "users")
 @Data
+@NoArgsConstructor
 public class User implements UserDetails {
   @Id
   @SequenceGenerator(
@@ -41,8 +44,9 @@ public class User implements UserDetails {
   @Enumerated(EnumType.STRING)
   private Role role;
 
-  private Instant createdAt;
-  private Instant updatedAt;
+  private LocalDateTime createdAt;
+
+  private LocalDateTime lastModified;
 
 
   @Override
@@ -80,85 +84,13 @@ public class User implements UserDetails {
     return true;
   }
 
-  public User(String name, String phoneNumber, String email, Role role, Instant createdAt, Instant updatedAt) {
+  public User(String name, String phoneNumber, String email, Role role, LocalDateTime createdAt, LocalDateTime lastModified) {
     this.name = name;
     this.phoneNumber = phoneNumber;
     this.email = email;
     this.role = role;
     this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-  }
-
-  public User() {
-  }
-
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  } 
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getPhoneNumber() {
-    return phoneNumber;
-  }
-
-  public void setPhoneNumber(String phoneNumber) {
-    this.phoneNumber = phoneNumber;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public Role getRole() {
-    return role;
-  }
-
-  public void setRole(Role role) {
-    this.role = role;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(Instant createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(Instant updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  @Override
-  public String toString() {
-    return "User{" +
-      "id=" + id +
-      ", name='" + name + '\'' +
-      ", phoneNumber='" + phoneNumber + '\'' +
-      ", email='" + email + '\'' +
-      ", role=" + role +
-      ", createdAt=" + createdAt +
-      ", updatedAt=" + updatedAt +
-      '}';
+    this.lastModified = lastModified;
   }
   
 

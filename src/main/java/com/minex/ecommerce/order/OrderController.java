@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.minex.ecommerce.order.dto.CreateOrderRequest;
+import com.minex.ecommerce.order.dto.CreateOrderDto;
 import com.minex.ecommerce.order.model.Order;
 
 import jakarta.validation.Valid;
@@ -31,7 +31,7 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest checkoutRequest) {
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderDto checkoutRequest) {
         Order checkedOutOrder = orderService.createOrder(checkoutRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(checkedOutOrder);
     }
