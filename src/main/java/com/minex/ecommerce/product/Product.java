@@ -31,9 +31,15 @@ public class Product {
     generator = "product_sequence"
   )
   private Long id;
+
+  @Column(nullable = false)
   private String name;
+
   private String description;
+
   private String imageUrl;
+
+  @Column(nullable = false)
   private Double price;
 
   @CreatedDate

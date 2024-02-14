@@ -5,9 +5,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -16,24 +18,24 @@ public class ProductService {
 
   private final ProductRepository productRepository;
 
-  public List<Product> getProducts() {
-    return productRepository.findAll();
-  }
+  public Page<Product> getProducts(Pageable pageable, String name) {
+    if (name != null && !name.isEmpty()) {
+        return productRepository.findByNameContainingIgnoreCase(name, pageable);
+    } else {
+        return productRepository.findAll(pageable);
+    }
+}
 
   public Product getProduct(Long productId) {
-    return productRepository.findById(productId).orElseThrow(() -> new IllegalStateException("Product with id " + productId + " does not exist"));
+    return productRepository.findById(productId).orElseThrow(() -> new EntityNotFoundException("Product with id " + productId + " does not exist"));
   }
 
-  public void addNewProduct(Product product) {
-    productRepository.save(product);
+  public Product addNewProduct(Product product) {
+    return productRepository.save(product);
   }
 
   public void deleteProduct(Long productId) {
-    System.out.println(productId);
-  }
-  
-  public void updateProduct(Long productId, String name, String description) {
-    System.out.println(name + " " + description);
+    productRepository.deleteById(productId);
   }
 
   public Map<Long, Product> getProductsByIds(Set<Long> productIds) {
