@@ -3,19 +3,15 @@ package com.minex.ecommerce.auth;
 import com.minex.ecommerce.config.JwtService;
 import com.minex.ecommerce.user.UserRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthenticationService {
-  private UserRepository repository;
-  private JwtService jwtService;
-
-  @Autowired
-  public AuthenticationService(UserRepository repository, JwtService jwtService) {
-    this.repository = repository;
-    this.jwtService = jwtService;
-  }
+  private final UserRepository repository;
+  private final JwtService jwtService;
 
   public AuthenticationResponse authenticate(AuthenticationRequest request) {
 
@@ -25,10 +21,7 @@ public class AuthenticationService {
         .orElseThrow();
     var jwtToken = jwtService.generateToken(user);
     var refreshToken = jwtService.generateRefreshToken(user);
-    AuthenticationResponse response = new AuthenticationResponse();
-    response.setAccessToken(jwtToken);
-    response.setRefreshToken(refreshToken);
-    return response;
+    return AuthenticationResponse.builder().accessToken(jwtToken).refreshToken(refreshToken).build();
   }
 
   // TODO: Implement refresh token logic

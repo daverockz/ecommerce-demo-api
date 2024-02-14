@@ -1,48 +1,45 @@
 package com.minex.ecommerce.order;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.minex.ecommerce.order.dto.CheckoutRequest;
+import com.minex.ecommerce.order.dto.CreateOrderRequest;
 import com.minex.ecommerce.order.model.Order;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
 @RestController
-@CrossOrigin
-@RequestMapping(path = "api/v1/orders")
+@RequestMapping("/api/v1/orders")
+@RequiredArgsConstructor
 public class OrderController {
-    
+
     private final OrderService orderService;
 
-    @Autowired
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
-
     @GetMapping
-    public List<Order> getOrders() {
-      return orderService.getOrders();
+    public ResponseEntity<Page<Order>> getOrders(
+            @RequestParam(defaultValue = "0") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        return ResponseEntity.ok(orderService.getOrders(page, size));
     }
 
-    @GetMapping(path = "{orderId}")
-    public Order getOrder(@PathVariable("orderId") Long orderId) {
-      return orderService.getOrder(orderId);
+    @GetMapping("/{id}")
+    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrder(id));
     }
 
-    @PostMapping("/checkout")
-    public ResponseEntity<Order> checkout(@RequestBody CheckoutRequest checkoutRequest) {
-        return ResponseEntity.ok(orderService.checkout(checkoutRequest));
+    @PostMapping
+    public ResponseEntity<Order> createOrder(@Valid @RequestBody CreateOrderRequest checkoutRequest) {
+        Order checkedOutOrder = orderService.createOrder(checkoutRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(checkedOutOrder);
     }
-  
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+        orderService.deleteOrder(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.minex.ecommerce.user;
+package com.minex.ecommerce.user.model;
 
 import java.time.Instant;
 import java.util.Collection;

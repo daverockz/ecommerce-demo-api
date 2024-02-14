@@ -13,14 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @CrossOrigin
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AuthenticationController {
 
-  private AuthenticationService service;
-
-  @Autowired
-  public AuthenticationController(AuthenticationService service) {
-    this.service = service;
-  }
+  private final AuthenticationService service;
 
   @PostMapping
   public ResponseEntity<AuthenticationResponse> authenticate(
@@ -28,6 +24,5 @@ public class AuthenticationController {
   ) {
     return ResponseEntity.ok(service.authenticate(request));
   }
-
 
 }

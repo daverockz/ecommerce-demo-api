@@ -1,21 +1,21 @@
 package com.minex.ecommerce.product;
-import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class ProductService {
 
   private final ProductRepository productRepository;
 
-  @Autowired
-  public ProductService(ProductRepository productRepository) {
-    this.productRepository = productRepository;
-  }
-  
   public List<Product> getProducts() {
     return productRepository.findAll();
   }
@@ -34,6 +34,11 @@ public class ProductService {
   
   public void updateProduct(Long productId, String name, String description) {
     System.out.println(name + " " + description);
+  }
+
+  public Map<Long, Product> getProductsByIds(Set<Long> productIds) {
+    List<Product> products = productRepository.findByIdIn(productIds);
+    return products.stream().collect(Collectors.toMap(Product::getId, product -> product));
   }
 
 }

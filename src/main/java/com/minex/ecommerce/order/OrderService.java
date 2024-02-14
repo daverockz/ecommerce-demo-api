@@ -1,11 +1,15 @@
 package com.minex.ecommerce.order;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
-import com.minex.ecommerce.order.dto.CheckoutItem;
-import com.minex.ecommerce.order.dto.CheckoutRequest;
+import com.minex.ecommerce.order.dto.CreateOrderItem;
+import com.minex.ecommerce.order.dto.CreateOrderRequest;
 import com.minex.ecommerce.order.model.Order;
 import com.minex.ecommerce.order.model.OrderItem;
 import com.minex.ecommerce.order.model.OrderStatus;
@@ -13,16 +17,24 @@ import com.minex.ecommerce.order.repository.OrderItemRepository;
 import com.minex.ecommerce.order.repository.OrderRepository;
 import com.minex.ecommerce.product.Product;
 import com.minex.ecommerce.product.ProductService;
-import com.minex.ecommerce.user.User;
 import com.minex.ecommerce.user.UserService;
+import com.minex.ecommerce.user.model.User;
 
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
+@Validated
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -30,100 +42,86 @@ public class OrderService {
     private final ProductService productService;
     private final OrderItemRepository orderItemRepository;
 
-    @Autowired
-    public OrderService(OrderRepository orderRepository, 
-    UserService userService, 
-    ProductService productService, 
-    OrderItemRepository orderItemRepository) {
-        this.orderRepository = orderRepository;
-        this.userService = userService;
-        this.productService = productService;
-        this.orderItemRepository = orderItemRepository;
-    }
-
-    public void addOrder(Order order) {
-        orderRepository.save(order);
-    }
 
     public void deleteOrder(Long orderId) {
         if (!orderRepository.existsById(orderId)) {
-            throw new IllegalStateException("Order with id " + orderId + " does not exist");
+            throw new EntityNotFoundException("Order with id " + orderId + " does not exist");
         }
         orderRepository.deleteById(orderId);
     }
 
-    public void updateOrder(Long orderId, Order order) {
-        Order existingOrder = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalStateException("Order with id " + orderId + " does not exist"));
-
-        // Update existingOrder properties if needed
-
-        orderRepository.save(existingOrder);
-    }
-
     public Order getOrder(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalStateException("Order with id " + orderId + " does not exist"));
+                .orElseThrow(() -> new EntityNotFoundException("Order with id " + orderId + " does not exist"));
     }
 
-    public List<Order> getOrders() {
+    public Page<Order> getOrders(Integer page, Integer size) {
         User authenticatedUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return orderRepository.findByUserId(authenticatedUser);
+        return orderRepository.findByUserId(authenticatedUser, PageRequest.of(page, size));
     }
 
     @Transactional
-    public Order checkout(CheckoutRequest checkoutRequest) {
+    public Order createOrder(CreateOrderRequest checkoutRequest) {
         User user = userService.getOrCreateUser(checkoutRequest.getUser());
         Order order = createOrder(checkoutRequest, user);
         List<OrderItem> orderItems = createOrderItems(checkoutRequest, order);
 
-        order.setTotalAmountDue(calculateTotalAmountDue(orderItems));
         order.setOrderItems(orderItems);
-        order.setCreatedAt(LocalDateTime.now());
-        order.setLastModified(LocalDateTime.now());
+        order.setTotalAmountDue(calculateTotalAmountDue(orderItems));
         order.setStatus(OrderStatus.PAID);
 
         return orderRepository.save(order);
     }
 
-    private Order createOrder(CheckoutRequest checkoutRequest, User user) {
-        Order order = new Order();
-        order.setUserId(user);
-        order.setDeliveryAddress(checkoutRequest.getDeliveryAddress());
-        // Set other order details...
-        return order;
+    private Order createOrder(CreateOrderRequest checkoutRequest, User user) {
+        return Order.builder()
+                .userId(user)
+                .deliveryAddress(checkoutRequest.getDeliveryAddress())
+                .createdAt(LocalDateTime.now())
+                .lastModified(LocalDateTime.now())
+                // You can chain other setters here if you have more fields to set
+                .build();
     }
+    
 
-    private List<OrderItem> createOrderItems(CheckoutRequest checkoutRequest, Order order) {
+    private List<OrderItem> createOrderItems(CreateOrderRequest checkoutRequest, Order order) {
+        // Correctly collect IDs into a Set instead of casting a List to a Set
+        Set<Long> productIds = checkoutRequest.getCheckoutItems().stream()
+                .map(CreateOrderItem::getProductId)
+                .collect(Collectors.toSet());
+    
+        Map<Long, Product> productMap = productService.getProductsByIds(productIds);
+    
         List<OrderItem> orderItems = new ArrayList<>();
-        for (CheckoutItem checkoutItem : checkoutRequest.getCheckoutItems()) {
-            Product product = productService.getProduct(checkoutItem.getProductId());
-
+        for (CreateOrderItem checkoutItem : checkoutRequest.getCheckoutItems()) {
+            Product product = productMap.get(checkoutItem.getProductId());
             if (product != null) {
-                OrderItem orderItem = createOrderItem(checkoutItem, order, product);
-                orderItems.add(orderItem);
+                orderItems.add(createOrderItem(checkoutItem, order, product));
+            } else {
+                log.warn("Product with ID {} not found, skipping item.", checkoutItem.getProductId());
             }
-            // Handle the case where the product doesn't exist
         }
         return orderItemRepository.saveAll(orderItems);
-    }
+    }    
 
-    private OrderItem createOrderItem(CheckoutItem checkoutItem, Order order, Product product) {
-        OrderItem orderItem = new OrderItem();
-        orderItem.setOrder(order);
-        orderItem.setPrice(product.getPrice());
-        orderItem.setQuantity(checkoutItem.getQuantity());
-        orderItem.setName(product.getName());
-        orderItem.setDescription(product.getDescription());
-        orderItem.setImageUrl(product.getImageUrl());
-        orderItem.setSubTotal(orderItem.getPrice() * orderItem.getQuantity());
-        orderItem.setCreatedAt(LocalDateTime.now());
-        orderItem.setLastModified(LocalDateTime.now());
-        // Set other order item details...
-        return orderItem;
+    private OrderItem createOrderItem(CreateOrderItem checkoutItem, Order order, Product product) {
+        return OrderItem.builder()
+                .order(order)
+                .price(product.getPrice())
+                .quantity(checkoutItem.getQuantity())
+                .name(product.getName())
+                .description(product.getDescription())
+                .imageUrl(product.getImageUrl())
+                .subTotal(product.getPrice() * checkoutItem.getQuantity())
+                .createdAt(LocalDateTime.now())
+                .lastModified(LocalDateTime.now())
+                .build();
     }
+    
 
     private double calculateTotalAmountDue(List<OrderItem> orderItems) {
-        return orderItems.stream().mapToDouble(OrderItem::getSubTotal).sum();
+        return orderItems.stream()
+                .mapToDouble(OrderItem::getSubTotal)
+                .sum();
     }
 }

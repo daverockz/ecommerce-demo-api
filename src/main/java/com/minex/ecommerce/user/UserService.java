@@ -5,6 +5,10 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.minex.ecommerce.user.model.Role;
+import com.minex.ecommerce.user.model.User;
+
 import java.time.Instant;
 
 

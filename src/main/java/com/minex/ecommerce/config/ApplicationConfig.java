@@ -3,6 +3,7 @@ package com.minex.ecommerce.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -16,14 +17,10 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
+@EnableJpaAuditing
 public class ApplicationConfig {
 
-  private UserRepository userRepository;
-
-  @Autowired
-  public ApplicationConfig(UserRepository userRepository) {
-    this.userRepository = userRepository;
-  }
+  private final UserRepository userRepository;
 
   @Bean
   public UserDetailsService userDetailsService() {
