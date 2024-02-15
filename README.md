@@ -18,8 +18,6 @@ them to their cart, and proceed to checkout.
 ## Technologies
 
 - Java / Spring Boot for the backend (Database: PostgreSQL)
-- React / Next.js for the frontend (Main focus was on the backend, frontend is just a repurposed template.)
-  -  Frontend Repo: https://github.com/daverockz/ecommerce-demo-web
 
 ## Features
 
