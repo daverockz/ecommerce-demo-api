@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Sort;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -57,7 +59,11 @@ public class OrderService {
 
     public Page<Order> getOrders(Integer page, Integer size) {
         User authenticatedUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return orderRepository.findByUserId(authenticatedUser, PageRequest.of(page, size));
+        // Specify the property to sort by (e.g., 'createdAt') and the direction (DESC for descending)
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt"); // Replace 'createdAt' with your actual date field
+        // Include the sort object in the PageRequest
+        PageRequest pageRequest = PageRequest.of(page, size, sort);
+        return orderRepository.findByUserId(authenticatedUser, pageRequest); // Assuming findByUserId takes the user ID and the PageRequest
     }
 
     @Transactional
